@@ -7,8 +7,8 @@ set(NTL_HEADER /usr/local/include)
 set(NTL_LIB /usr/local/lib)
 add_subdirectory(HElib)
 
-include_directories(${NTL_HEADER} ${HELIB_HEADER} include)
-link_directories(${NTL_LIB} ${HELIB_LIB})
+include_directories(${NTL_HEADER} HElib/include include)
+link_directories(${NTL_LIB})
 
 set(HELIB_HEADER HELib/include)
 add_subdirectory(src)
