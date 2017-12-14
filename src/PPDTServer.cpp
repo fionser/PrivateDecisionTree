@@ -186,7 +186,7 @@ struct PPDTServer::Imp {
 
         summations_.resize(paths_cnt);
         labeled_.resize(paths_cnt);
-//#pragma omp parallel
+#pragma omp parallel
         for (size_t i = 0; i < paths_cnt; i++) {
             summations_[i].reset(new Ctxt(evk));
             sum_along_path(summations_[i], paths_[i]);
@@ -269,6 +269,7 @@ struct PPDTServer::Imp {
         delete end2end;
         std::cout << "EVAL ALL" << std::endl;
         printf("%.3f %.3f\n", evl_time, end2end_time);
+        printf("internal nodes %ld, paths %ld\n", greater_than_.size(), paths_.size());
     }
 
     /// threshold format: i1,i2,i3, ...
