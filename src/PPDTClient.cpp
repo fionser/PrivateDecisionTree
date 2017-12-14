@@ -1,20 +1,42 @@
 #include "network/PPDT.hpp"
 #include "network/net_io.hpp"
 #include "util/Timer.hpp"
+#include "util/literal.hpp"
 #include "GreaterThan.hpp"
+
 #include <HElib/FHE.h>
 #include <HElib/FHEContext.h>
 
+#include <fstream>
 
 struct PPDTClient::Imp {
     Imp() {}
     ~Imp() {}
+
     bool load(std::string const& file) {
-        features_.resize(57);
-        // fake features for debug
-        for (long i = 0; i < features_.size(); i++)
-            features_[i] = 10 * (i + 1);
-        return true;
+        std::ifstream fd(file);
+        if (!fd.is_open())
+            return false;
+
+        std::string line;
+        std::getline(fd, line);
+        if (line.empty())
+            return false;
+        auto fields = util::split_by(line, ',');
+        
+        features_.resize(fields.size());
+        bool ok = true;
+        std::transform(fields.cbegin(), fields.cend(), features_.begin(),
+                       [&ok](const std::string &field) -> long {
+                           auto f = util::trim(field);
+                           size_t pos;
+                           long v = std::stol(f, &pos, 10);
+                           if (pos != f.size())
+                               ok = false;
+                           return v; 
+                       });
+        fd.close();
+        return ok;
     }
 
     void send_context(FHEcontext const&context, 

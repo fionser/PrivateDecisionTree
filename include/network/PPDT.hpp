@@ -25,7 +25,7 @@ public:
     PPDTClient() {}
 
     ~PPDTClient() {}
-
+    /// Client's input is one line splitted with comma.
     bool load(std::string const& file);
 
     void run(tcp::iostream &conn);
