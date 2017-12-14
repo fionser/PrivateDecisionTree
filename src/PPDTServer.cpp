@@ -10,6 +10,7 @@
 #include <vector>
 #include <iostream>
 #include <memory>
+#include <thread>
 
 struct Tree {
     // static std::atomic<size_t> counter;
@@ -186,8 +187,9 @@ struct PPDTServer::Imp {
 
         summations_.resize(paths_cnt);
         labeled_.resize(paths_cnt);
-#pragma omp parallel
-        for (size_t i = 0; i < paths_cnt; i++) {
+
+#pragma omp parallel for
+        for (size_t i = 0; i < paths_cnt; i++)  {
             summations_[i].reset(new Ctxt(evk));
             sum_along_path(summations_[i], paths_[i]);
             long left_nodes_cnt = count_left_nodes(paths_[i]);
@@ -199,7 +201,7 @@ struct PPDTServer::Imp {
             NTL::SetCoeff(random, 0, modification);
             summations_[i]->addConstant(random);
             /// duplicate summations_[i]
-            labeled_[i].reset(new Ctxt(*summations_[i])); 
+            labeled_[i].reset(new Ctxt(*summations_[i]));
         }
     }
 
@@ -214,7 +216,7 @@ struct PPDTServer::Imp {
     void randomize(const long p) {
         const size_t paths_cnt = paths_.size();
 
-#pragma omp parallel
+#pragma omp parallel for
         for (size_t i = 0; i < paths_cnt; i++) {
             NTL::ZZX non_zero_random(0, 1);
             long label = i; // TODO(riku) to use the true label
@@ -224,17 +226,17 @@ struct PPDTServer::Imp {
             /// use two independent rands.
             NTL::SetCoeff(non_zero_random, 0, random_non_zero(p)); 
             summations_[i]->multByConstant(non_zero_random);
-            /// mod down to lowest level to reduce communication cost
-            labeled_[i]->modDownToLevel(1);
-            summations_[i]->modDownToLevel(1);
         }
     }
 
-    void response_result(tcp::iostream &conn) const {
+    void response_result(tcp::iostream &conn) {
         assert(labeled_.size() == summations_.size());
         int32_t num = labeled_.size();
         conn << (num << 1);
         for (size_t i = 0; i < labeled_.size(); i++) {
+            /// mod down to lowest level to reduce communication cost
+            labeled_[i]->modDownToLevel(1);
+            summations_[i]->modDownToLevel(1);
             conn << (*summations_[i]);
             conn << (*labeled_[i]);
         }

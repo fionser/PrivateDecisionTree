@@ -11,7 +11,6 @@ include_directories(${NTL_HEADER} HElib/include include)
 link_directories(${NTL_LIB})
 
 set(HELIB_HEADER HELib/include)
-add_subdirectory(src)
 
 find_package(OpenMP)
 if (OPENMP_FOUND)
@@ -19,5 +18,6 @@ if (OPENMP_FOUND)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
+add_subdirectory(src)
 add_executable(main main.cpp)
 target_link_libraries(main ppdt helib ntl pthread gmp boost_system)
