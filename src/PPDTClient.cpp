@@ -116,8 +116,9 @@ struct PPDTClient::Imp {
             label = wait_result(sk, conn);
         } while(0);
         std::cout << "prediction label is " << label << std::endl;
-        std::cout << "ENC DEC ALL\n" << std::endl;
+        std::cout << "ENC DEC ALL" << std::endl;
         printf("%.3f %.3f %.3f\n", enc_time_, dec_time_, end2end_time_);
+        printf("%ld features\n", features_.size());
     }
 
     std::vector<long> features_;
