@@ -242,7 +242,7 @@ struct PPDTServer::Imp {
 
     void run(tcp::iostream &conn) {
         double end2end_time;
-        Timer end2end(&end2end_time);
+        Timer *end2end = new Timer(&end2end_time);
         FHEcontext context = receive_context(conn);
         /// return 0 for greater, 1 other wise.
 		gt_args_ = create_greater_than_args(0L, 1L, context);
@@ -266,7 +266,7 @@ struct PPDTServer::Imp {
             randomize(context.zMStar.getP());
             response_result(conn);
         } while(0);
-
+        delete end2end;
         std::cout << "EVAL ALL" << std::endl;
         printf("%.3f %.3f\n", evl_time, end2end_time);
     }
