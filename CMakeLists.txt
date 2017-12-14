@@ -1,0 +1,23 @@
+cmake_minimum_required(VERSION 3.2)
+project(private_decision_tree)
+set(CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+
+set(NTL_HEADER /usr/local/include)
+set(NTL_LIB /usr/local/lib)
+add_subdirectory(HElib)
+
+include_directories(${NTL_HEADER} ${HELIB_HEADER} include)
+link_directories(${NTL_LIB} ${HELIB_LIB})
+
+set(HELIB_HEADER HELib/include)
+add_subdirectory(src)
+
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
+
+add_executable(main main.cpp)
+target_link_libraries(main ppdt helib ntl pthread gmp boost_system)
