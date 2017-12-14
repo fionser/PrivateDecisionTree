@@ -241,7 +241,8 @@ struct PPDTServer::Imp {
     }
 
     void run(tcp::iostream &conn) {
-        auto _start = Clock::now();
+        double end2end_time;
+        Timer end2end(&end2end_time);
         FHEcontext context = receive_context(conn);
         /// return 0 for greater, 1 other wise.
 		gt_args_ = create_greater_than_args(0L, 1L, context);
@@ -257,17 +258,15 @@ struct PPDTServer::Imp {
             return;
         }
 
-        auto start = Clock::now(); 
-        compare_all_internal_nodes(root, features, context);
-        start = Clock::now();
-        sum_up_paths(evk);  
-        randomize(context.zMStar.getP());
-        auto end = Clock::now();
-        response_result(conn);
-        auto _end = Clock::now();
+        double evl_time;
+        do {
+            Timer timer(&evl_time);
+            compare_all_internal_nodes(root, features, context);
+            sum_up_paths(evk);  
+            randomize(context.zMStar.getP());
+            response_result(conn);
+        } while(0);
 
-        double evl_time = time_as_millsecond(end - start); 
-        double end2end_time = time_as_millsecond(_end - _start);
         std::cout << "EVAL ALL" << std::endl;
         printf("%.3f %.3f\n", evl_time, end2end_time);
     }

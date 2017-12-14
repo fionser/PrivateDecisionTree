@@ -30,13 +30,11 @@ struct PPDTClient::Imp {
     }
 
     void encrypt_feature(FHESecKey const& sk) {
-        auto start = Clock::now();
+        Timer timer(&enc_time_);
         enc_features_.resize(features_.size(), sk);
         for (size_t i = 0; i < features_.size(); i++) {
             encrypt_in_degree(enc_features_[i], features_[i], sk);
         }
-        auto end = Clock::now();
-        enc_time_ = time_as_millsecond(end - start);
     }
 
     void send_encrypted_features(std::ostream &conn) const {
@@ -48,7 +46,8 @@ struct PPDTClient::Imp {
 
     long wait_result(FHESecKey const& sk, 
                      std::istream &conn) {
-        auto start = Clock::now();
+        /// notice that this time include some network
+        Timer timer(&dec_time_);
         int32_t num;
         conn >> num;
         Ctxt summation(sk), label(sk);
@@ -69,9 +68,6 @@ struct PPDTClient::Imp {
                 }
             } 
         }
-        auto end = Clock::now();
-        /// notice that this time include some network
-        dec_time_ = time_as_millsecond(end - start); 
         return prediction;
     }
 
@@ -88,14 +84,15 @@ struct PPDTClient::Imp {
         FHESecKey sk(context);
         sk.GenSecKey(64);
         setup_auxiliary_for_greater_than(&sk);
-        auto start = Clock::now();
-        send_evk(sk, conn);
-        encrypt_feature(sk);
+        long label;
+        do {
+            Timer timer(&end2end_time_);
+            send_evk(sk, conn);
+            encrypt_feature(sk);
 
-        send_encrypted_features(conn);
-        long label = wait_result(sk, conn);
-        auto end = Clock::now();
-        end2end_time_ = time_as_millsecond(end - start);
+            send_encrypted_features(conn);
+            label = wait_result(sk, conn);
+        } while(0);
         std::cout << "prediction label is " << label << std::endl;
         std::cout << "ENC DEC ALL\n" << std::endl;
         printf("%.3f %.3f %.3f\n", enc_time_, dec_time_, end2end_time_);
