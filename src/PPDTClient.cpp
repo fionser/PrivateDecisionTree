@@ -46,9 +46,12 @@ struct PPDTClient::Imp {
 
     void send_evk(FHESecKey const& sk,
                   std::ostream &conn) const {
-        FHEPubKey ek(sk);
-        ek.makeSymmetric();
+        const FHEPubKey &ek(sk);
         conn << ek;
+        /// If to use symmetric version. Change to the following codes.
+        // FHEPubKey ek(sk);
+        // ek.makeSymmetric();
+        // conn << ek;
     }
 
     void encrypt_feature(FHESecKey const& sk) {

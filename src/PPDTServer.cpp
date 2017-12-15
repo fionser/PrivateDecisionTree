@@ -11,7 +11,7 @@
 #include <iostream>
 #include <memory>
 #include <thread>
-
+#define PLAIN_THRESHOLD 0
 struct Tree {
     // static std::atomic<size_t> counter;
     /// WARN: not thread safe
@@ -134,12 +134,13 @@ struct PPDTServer::Imp {
         compare_all_internal_nodes(root->left, features, context);
         auto index = root->feature_index;
         auto id = root->id;
-		NTL::ZZX threshold = prepare_Xb(thresholds_.at(id),
-										gt_args_,
-										context);
  		assert(greater_than_.find(root->id) == greater_than_.end());
-        ctx_ptr_t f(new Ctxt(features.at(index)));
-        f->multByConstant(threshold);
+        ctx_ptr_t f(new Ctxt(features.at(index))); // X^{a}
+#ifdef PLAIN_THRESHOLD
+        f->multByConstant(plain_thresholds_.at(id));
+#else
+        f->multiplyBy(enc_thresholds_.at(id));
+#endif
         greater_than_.insert(std::pair<int, ctx_ptr_t>(id, std::move(f)));
     }
     /// Walks along the path, and sum up the comparison results,
@@ -241,10 +242,28 @@ struct PPDTServer::Imp {
             conn << (*labeled_[i]);
         }
     }
+#ifdef PLAIN_THRESHOLD
+    void use_plain_threshold(FHEPubKey const& pk) {
+        FHEcontext const& context = pk.getContext();
+        plain_thresholds_.resize(thresholds_.size());
+        for (size_t i = 0; i < thresholds_.size(); i++) {
+            plain_thresholds_[i] = prepare_Xb(thresholds_[i], gt_args_, context); // X^{-b}
+        }
+    }
+#else
+    void use_enc_threshold(const FHEPubKey const& pk) {
+        FHEcontext const& context = pk.getContext();
+        enc_threashods_.resize(thresholds_.size());
+        for (size_t i = 0; i < thresholds_.size(); i++) {
+            auto raw = new Ctxt(pk);
+            auto plain_threshold = prepare_Xb(thresholds_.[i], gt_args_, context); // X^{-b}
+            pk.Encrypt(*raw, plain_threshold);
+            enc_threashods_[i].reset(raw);
+        }
+    }
+#endif
 
     void run(tcp::iostream &conn) {
-        double end2end_time;
-        Timer *end2end = new Timer(&end2end_time);
         FHEcontext context = receive_context(conn);
         /// return 0 for greater, 1 other wise.
 		gt_args_ = create_greater_than_args(0L, 1L, context);
@@ -253,6 +272,13 @@ struct PPDTServer::Imp {
             std::cerr << "Error happned when to recevie evaluation key\n";
             return;
         }
+#ifdef PLAIN_THRESHOLD
+        use_plain_threshold(evk);
+#else
+        use_enc_threshold(evk);
+#endif
+        double end2end_time;
+        Timer *end2end = new Timer(&end2end_time);
 
         std::vector<Ctxt> features;
         if (!recevie_features(features, evk, conn)) {
@@ -400,8 +426,12 @@ struct PPDTServer::Imp {
             }
         }
     }
-
     std::vector<long> thresholds_;
+#ifdef PLAIN_THRESHOLD
+    std::vector<NTL::ZZX> plain_thresholds_;
+#else
+    std::vector<ctx_ptr_t> enc_thresholds_;
+#endif
     std::map<long, long> id_2_feature_index_;
     std::vector<Path_t> paths_;
     std::map<size_t, ctx_ptr_t> greater_than_;
