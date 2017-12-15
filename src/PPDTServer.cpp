@@ -29,7 +29,7 @@ struct Tree {
     }
 
     void free_tree(Tree *root) {
-        if (!root) 
+        if (!root)
             return;
         if (root->is_leaf()) {
             delete root;
@@ -108,7 +108,7 @@ struct PPDTServer::Imp {
         return ok;
     }
 
-	bool recevie_features(std::vector<Ctxt> &features, 
+	bool recevie_features(std::vector<Ctxt> &features,
 						  FHEPubKey const& evk,
 						  std::istream &conn) const {
         int32_t num;
@@ -125,7 +125,7 @@ struct PPDTServer::Imp {
         return true;
     }
 
-    void compare_all_internal_nodes(Tree *root, 
+    void compare_all_internal_nodes(Tree *root,
 									std::vector<Ctxt> const& features,
 									FHEcontext const& context) {
         if (root->is_leaf())
@@ -136,10 +136,10 @@ struct PPDTServer::Imp {
         auto id = root->id;
  		assert(greater_than_.find(root->id) == greater_than_.end());
         ctx_ptr_t f(new Ctxt(features.at(index))); // X^{a}
-#ifdef PLAIN_THRESHOLD
+#if PLAIN_THRESHOLD
         f->multByConstant(plain_thresholds_.at(id));
 #else
-        f->multiplyBy(enc_thresholds_.at(id));
+        f->multiplyBy(*enc_thresholds_.at(id));
 #endif
         greater_than_.insert(std::pair<int, ctx_ptr_t>(id, std::move(f)));
     }
@@ -225,7 +225,7 @@ struct PPDTServer::Imp {
             labeled_[i]->multByConstant(non_zero_random);
             labeled_[i]->addConstant(NTL::to_ZZX(i));
             /// use two independent rands.
-            NTL::SetCoeff(non_zero_random, 0, random_non_zero(p)); 
+            NTL::SetCoeff(non_zero_random, 0, random_non_zero(p));
             summations_[i]->multByConstant(non_zero_random);
         }
     }
@@ -242,7 +242,7 @@ struct PPDTServer::Imp {
             conn << (*labeled_[i]);
         }
     }
-#ifdef PLAIN_THRESHOLD
+#if PLAIN_THRESHOLD
     void use_plain_threshold(FHEPubKey const& pk) {
         FHEcontext const& context = pk.getContext();
         plain_thresholds_.resize(thresholds_.size());
@@ -251,14 +251,14 @@ struct PPDTServer::Imp {
         }
     }
 #else
-    void use_enc_threshold(const FHEPubKey const& pk) {
+    void use_enc_threshold(FHEPubKey const& pk) {
         FHEcontext const& context = pk.getContext();
-        enc_threashods_.resize(thresholds_.size());
+        enc_thresholds_.resize(thresholds_.size());
         for (size_t i = 0; i < thresholds_.size(); i++) {
             auto raw = new Ctxt(pk);
-            auto plain_threshold = prepare_Xb(thresholds_.[i], gt_args_, context); // X^{-b}
+            auto plain_threshold = prepare_Xb(thresholds_[i], gt_args_, context); // X^{-b}
             pk.Encrypt(*raw, plain_threshold);
-            enc_threashods_[i].reset(raw);
+            enc_thresholds_[i].reset(raw);
         }
     }
 #endif
@@ -272,7 +272,7 @@ struct PPDTServer::Imp {
             std::cerr << "Error happned when to recevie evaluation key\n";
             return;
         }
-#ifdef PLAIN_THRESHOLD
+#if PLAIN_THRESHOLD
         use_plain_threshold(evk);
 #else
         use_enc_threshold(evk);
@@ -290,7 +290,7 @@ struct PPDTServer::Imp {
         do {
             Timer timer(&evl_time);
             compare_all_internal_nodes(root, features, context);
-            sum_up_paths(evk);  
+            sum_up_paths(evk);
             randomize(context.zMStar.getP());
             response_result(conn);
         } while(0);
@@ -316,7 +316,7 @@ struct PPDTServer::Imp {
                            long val = std::stol(f, &pos, 10);
                            if (pos != f.size())
                                ok = false;
-                           return val;  
+                           return val;
                        });
         return ok;
     }
@@ -427,7 +427,7 @@ struct PPDTServer::Imp {
         }
     }
     std::vector<long> thresholds_;
-#ifdef PLAIN_THRESHOLD
+#if PLAIN_THRESHOLD
     std::vector<NTL::ZZX> plain_thresholds_;
 #else
     std::vector<ctx_ptr_t> enc_thresholds_;
@@ -447,7 +447,7 @@ bool PPDTServer::load(std::string const& file) {
 }
 
 void PPDTServer::run(tcp::iostream &conn) {
-    if (imp_) 
+    if (imp_)
         imp_->run(conn);
     else
         std::cerr << "call PPDTServer::load first" << std::endl;
