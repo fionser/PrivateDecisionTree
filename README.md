@@ -26,3 +26,5 @@ To do so, turns the macos `PLAIN_THRESHOLD` to `0` in files `PPDTClient.cpp` and
 
 * Modify the port number and ip address in [main.cpp](main.cpp#L32).
 
+## Contact
+Any question, plz contact fionser_AT_gmail.com
