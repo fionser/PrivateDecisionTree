@@ -24,5 +24,5 @@ We can run the decision tree evaluation with both encrypted tree model and encry
 To do so, turns the macos `PLAIN_THRESHOLD` to `0` in files `PPDTClient.cpp` and
 `PPDTServer.cpp`.
 
-* Modify the port number and ip address in [main.cpp](main.cpp).
+* Modify the port number and ip address in [main.cpp](main.cpp#L32).
 
